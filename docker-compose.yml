@@ -1,0 +1,25 @@
+version: '3.7'
+
+services:
+  mongo:
+    image: mongo
+    ports:
+    - 27017:27017
+  mongo-ui:
+    image: mongo-express
+    ports:
+    - 8081:8081
+    depends_on:
+    - mongo
+  competences:
+    build: ./competences
+    ports:
+    - 8000:80
+    environment:
+    - MONGO_HOST=mongo
+  equipes:
+    build: ./equipes
+    ports:
+    - 8001:80
+    environment:
+    - MONGO_HOST=mongo
