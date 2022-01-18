@@ -8,18 +8,77 @@ services:
   mongo-ui:
     image: mongo-express
     ports:
-    - 8081:8081
+    - 9081:8081
     depends_on:
-    - mongo
+    - mongo 
   competences:
     build: ./competences
     ports:
-    - 8000:80
+    - 9000:80
     environment:
     - MONGO_HOST=mongo
+    - EQUIPE_HOST=equipes
+    - EQUIPE_PORT=80
+    - CONSUL_HOST=consul
+    - CONSUL_PORT=8500
+    labels:
+    - traefik.enable=true
+    - traefik.http.routers.competences.rule=PathPrefix(`/competences`)
+    - traefik.http.routers.competences.entrypoints=web
+    depends_on:
+    - mongo
   equipes:
     build: ./equipes
     ports:
-    - 8001:80
+    - 9001:80
     environment:
     - MONGO_HOST=mongo
+    labels:
+    - traefik.enable=true
+    - traefik.http.routers.equipes.rule=PathPrefix(`/equipes`)
+    - traefik.http.routers.equipes.entrypoints=web
+    depends_on:
+    - mongo
+  utilisateurs:
+    build: ./utilisateurs
+    ports:
+    - 9002:8888
+    environment:
+    - MONGO_HOST=mongo
+    labels:
+    - traefik.enable=true
+    - traefik.http.routers.utilisateurs.rule=PathPrefix(`/utilisateurs`)
+    - traefik.http.routers.utilisateurs.entrypoints=web
+    depends_on:
+    - mongo
+  niveaux:
+    image: niveaux:0.0.1-SNAPSHOT
+    ports:
+    - 9998:9999
+    environment:
+    - MONGO_HOST=mongo
+    labels:
+    - traefik.enable=true
+    - traefik.http.routers.niveaux.rule=PathPrefix(`/niveaux`)
+    - traefik.http.routers.niveaux.entrypoints=web
+
+  traefik:
+    image: traefik:v2.5
+    command:
+    - --api.insecure=true
+    - --providers.docker=true
+    - --providers.docker.exposedbydefault=false
+    - --entrypoints.web.address=:80
+    - --providers.consulcatalog.endpoint.address=consul:8500"
+    - --providers.consulcatalog.defaultRule=PathPrefix(`{{ .Name }}`)
+    - --serversTransport.insecureSkipVerify=true
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+    - 80:80
+    - 8080:8080
+
+  consul:
+   image: consul
+   ports:
+   - 9500:8500
